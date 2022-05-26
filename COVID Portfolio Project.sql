@@ -87,3 +87,69 @@ On dea.location = vac.location
 and dea.date = vac.date
 Where dea.continent is not null
 Order by 2,3
+
+
+
+-- USE CTE
+
+With PopvsVac (Continent, Location, Date, Population, New_Vaccinations, RollingPeopleVaccinated)
+as
+(
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(cast (vac.new_vaccinations as int)) OVER (Partition By dea.location Order by dea.location, dea.date) as RollingPeopleVaccinated
+From PortfolioProject..CovidDeaths as dea
+Join PortfolioProject..CovidVaccinations as vac
+On dea.location = vac.location
+and dea.date = vac.date
+Where dea.continent is not null
+--Order by 2,3
+)
+Select *,(RollingPeopleVaccinated/Population)*100 
+From PopvsVac
+
+
+
+-- TEMP TABLE
+
+Drop Table if exists #PercentPopulationVaccinated
+Create Table #PercentPopulationVaccinated
+(
+Continent nvarchar(255),
+Location nvarchar(255),
+Date datetime,
+Population numeric,
+New_vaccinations numeric,
+RollingPeopleVaccinated numeric
+)
+
+
+Insert into #PercentPopulationVaccinated
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(cast (vac.new_vaccinations as int)) OVER (Partition By dea.location Order by dea.location, dea.date) as RollingPeopleVaccinated
+From PortfolioProject..CovidDeaths as dea
+Join PortfolioProject..CovidVaccinations as vac
+On dea.location = vac.location
+and dea.date = vac.date
+--Where dea.continent is not null
+--Order by 2,3
+
+Select *,(RollingPeopleVaccinated/Population)*100 
+From #PercentPopulationVaccinated
+
+
+
+-- Creating View to store data for later visualizations 
+
+Create View PercentPopulationVaccinated as
+Select dea.continent, dea.location, dea.date, dea.population, vac.new_vaccinations
+, SUM(cast (vac.new_vaccinations as int)) OVER (Partition By dea.location Order by dea.location, dea.date) as RollingPeopleVaccinated
+From PortfolioProject..CovidDeaths as dea
+Join PortfolioProject..CovidVaccinations as vac
+On dea.location = vac.location
+and dea.date = vac.date
+Where dea.continent is not null
+--Order by 2,3
+
+
+Select *
+From PercentPopulationVaccinated
